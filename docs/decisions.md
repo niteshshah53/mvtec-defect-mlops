@@ -20,3 +20,8 @@
 - **Decision**: Use `astral-sh/setup-uv@v5` with caching enabled, `uv python install 3.11`, and `uv sync --locked` to run Ruff (lint + format check) and pytest on pushes to `main` and pull requests.
 - **Rationale**: Keeps CI fast, deterministic, and isolated. Avoids installing heavy ML dependencies (Anomalib, PyTorch) or downloading dataset files in the PR/linting loop.
 
+## 5. MVTec AD Dataset Validation and Summary Schema
+- **Date**: 2026-10-04
+- **Decision**: Implement dataset structure validation and counting via `summarize_dataset(root, categories)` using standard library modules only (`pathlib`, `json`, `argparse`). Validation errors raise `DatasetValidationError`, inheriting from both `ValueError` and `FileNotFoundError`. Validates folder structure (`train/good`, `test/good`, `test/<defect>`, `ground_truth/<defect>`) and image-to-mask count equality for every defect type. Returns a plain dictionary mapping category names to summary metrics (`train_good`, `test_good`, `test_defects`, `test_defects_total`, `test_total`, `ground_truth_masks`, `ground_truth_defects`).
+- **Rationale**: Ensures reproducible and automated data validation across categories (bottle, screw, capsule) before training, while keeping CI and tests lightweight with zero heavy runtime dependencies.
+

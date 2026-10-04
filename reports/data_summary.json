@@ -1,0 +1,61 @@
+{
+  "bottle": {
+    "train_good": 209,
+    "test_good": 20,
+    "test_defects": {
+      "broken_large": 20,
+      "broken_small": 22,
+      "contamination": 21
+    },
+    "test_defects_total": 63,
+    "test_total": 83,
+    "ground_truth_masks": 63,
+    "ground_truth_defects": {
+      "broken_large": 20,
+      "broken_small": 22,
+      "contamination": 21
+    }
+  },
+  "screw": {
+    "train_good": 320,
+    "test_good": 41,
+    "test_defects": {
+      "manipulated_front": 24,
+      "scratch_head": 24,
+      "scratch_neck": 25,
+      "thread_side": 23,
+      "thread_top": 23
+    },
+    "test_defects_total": 119,
+    "test_total": 160,
+    "ground_truth_masks": 119,
+    "ground_truth_defects": {
+      "manipulated_front": 24,
+      "scratch_head": 24,
+      "scratch_neck": 25,
+      "thread_side": 23,
+      "thread_top": 23
+    }
+  },
+  "capsule": {
+    "train_good": 219,
+    "test_good": 23,
+    "test_defects": {
+      "crack": 23,
+      "faulty_imprint": 22,
+      "poke": 21,
+      "scratch": 23,
+      "squeeze": 20
+    },
+    "test_defects_total": 109,
+    "test_total": 132,
+    "ground_truth_masks": 109,
+    "ground_truth_defects": {
+      "crack": 23,
+      "faulty_imprint": 22,
+      "poke": 21,
+      "scratch": 23,
+      "squeeze": 20
+    }
+  }
+}
