@@ -218,3 +218,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# MVTec Defect MLOps
+data/
+mlruns/
+mlflow.db*
+artifacts/
+metrics/
+*.pth
+*.pt
+*.ckpt
+*.onnx
