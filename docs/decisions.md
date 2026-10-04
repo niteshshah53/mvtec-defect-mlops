@@ -14,3 +14,9 @@
 - **Date**: 2026-10-04
 - **Decision**: Manage development dependencies (`pytest`, `ruff`, `pre-commit`) via PEP 735 `[dependency-groups].dev`.
 - **Rationale**: Keeps runtime dependencies decoupled from developer and CI tooling while integrating seamlessly with `uv sync`.
+
+## 4. GitHub Actions CI Pipeline
+- **Date**: 2026-10-04
+- **Decision**: Use `astral-sh/setup-uv@v5` with caching enabled, `uv python install 3.11`, and `uv sync --locked` to run Ruff (lint + format check) and pytest on pushes to `main` and pull requests.
+- **Rationale**: Keeps CI fast, deterministic, and isolated. Avoids installing heavy ML dependencies (Anomalib, PyTorch) or downloading dataset files in the PR/linting loop.
+
