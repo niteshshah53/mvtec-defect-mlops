@@ -25,3 +25,11 @@
 - **Decision**: Implement dataset structure validation and counting via `summarize_dataset(root, categories)` using standard library modules only (`pathlib`, `json`, `argparse`). Validation errors raise `DatasetValidationError`, inheriting from both `ValueError` and `FileNotFoundError`. Validates folder structure (`train/good`, `test/good`, `test/<defect>`, `ground_truth/<defect>`) and image-to-mask count equality for every defect type. Returns a plain dictionary mapping category names to summary metrics (`train_good`, `test_good`, `test_defects`, `test_defects_total`, `test_total`, `ground_truth_masks`, `ground_truth_defects`).
 - **Rationale**: Ensures reproducible and automated data validation across categories (bottle, screw, capsule) before training, while keeping CI and tests lightweight with zero heavy runtime dependencies.
 
+## 6. Dataset Inspection Image Library
+- **Date**: 2026-10-04
+- **Decision**: Use the already-declared Pillow dependency for dataset contact-sheet generation.
+- **Rationale**: Pillow provides the required image loading, resizing, compositing, labeling, and PNG output without adding matplotlib, numpy, or other dependencies.
+
+## 7. Contact-Sheet Visual Inspection
+- **Date**: 2026-10-04
+- **Observation**: The inspected contact sheets showed substantial variation in defect size, location, and shape, including large regions, thin line-like defects, and multi-component masks. Several defects were subtle in raw images, especially some screw and capsule examples. Good samples also varied in screw orientation, capsule imprint/logo visibility, and bottle appearance/reflections.
