@@ -48,6 +48,9 @@ def test_load_params_valid_flat(tmp_path: Path) -> None:
     assert config.coreset_sampling_ratio == 0.1
     assert config.image_size == (256, 256)
     assert config.seed == 42
+    assert config.test_split_mode == "from_dir"
+    assert config.val_split_mode == "from_test"
+    assert config.val_split_ratio == 0.5
     assert config.data_root == Path("data/mvtec_ad")
     assert config.mlflow_tracking_uri == "sqlite:///mlflow.db"
     assert config.mlflow_experiment_name == "mvtec_defect_patchcore"
@@ -214,6 +217,41 @@ def test_load_params_invalid_image_size(tmp_path: Path) -> None:
         load_params(yaml_file)
 
 
+@pytest.mark.parametrize(
+    ("key", "value", "match"),
+    [
+        ("test_split_mode", "same_as_test", "test_split_mode must be one of"),
+        ("test_split_mode", "from_test", "test_split_mode must be one of"),
+        ("test_split_mode", "unsupported", "test_split_mode must be one of"),
+        ("val_split_mode", "same_as_test", "same_as_test.*not allowed"),
+        ("val_split_mode", "unsupported", "val_split_mode must be one of"),
+        ("val_split_ratio", "not-a-number", "val_split_ratio must be a numeric value"),
+        ("val_split_ratio", 0.0, "val_split_ratio must be in"),
+        ("val_split_ratio", 1.0, "val_split_ratio must be in"),
+    ],
+)
+def test_load_params_invalid_split_settings(
+    tmp_path: Path,
+    key: str,
+    value: object,
+    match: str,
+) -> None:
+    """Verify split modes and validation ratio are validated."""
+    yaml_file = tmp_path / "params.yaml"
+    data = {
+        "category": "bottle",
+        "backbone": "wide_resnet50_2",
+        "coreset_sampling_ratio": 0.1,
+        "image_size": [256, 256],
+        "seed": 42,
+        key: value,
+    }
+    _write_yaml(yaml_file, data)
+
+    with pytest.raises(ValueError, match=match):
+        load_params(yaml_file)
+
+
 def test_train_config_to_dict() -> None:
     """Verify TrainConfig.to_dict formats parameters cleanly for MLflow."""
     config = TrainConfig(
@@ -222,6 +260,9 @@ def test_train_config_to_dict() -> None:
         coreset_sampling_ratio=0.1,
         image_size=(256, 256),
         seed=42,
+        test_split_mode="from_dir",
+        val_split_mode="from_test",
+        val_split_ratio=0.5,
         data_root=Path("data/mvtec_ad"),
     )
 
@@ -231,6 +272,9 @@ def test_train_config_to_dict() -> None:
     assert params["coreset_sampling_ratio"] == 0.1
     assert params["image_size"] == "256x256"
     assert params["seed"] == 42
+    assert params["test_split_mode"] == "from_dir"
+    assert params["val_split_mode"] == "from_test"
+    assert params["val_split_ratio"] == 0.5
     assert params["data_root"] == "data/mvtec_ad"
 
 

@@ -24,6 +24,9 @@ class TrainConfig:
     coreset_sampling_ratio: float = 0.1
     image_size: tuple[int, int] = (256, 256)
     seed: int = 42
+    test_split_mode: str = "from_dir"
+    val_split_mode: str = "from_test"
+    val_split_ratio: float = 0.5
     data_root: Path = Path("data/mvtec_ad")
     mlflow_tracking_uri: str = "sqlite:///mlflow.db"
     mlflow_experiment_name: str = "mvtec_defect_patchcore"
@@ -154,6 +157,33 @@ def load_params(
         msg = "seed must be an integer"
         raise ValueError(msg) from err
 
+    test_split_mode = str(cfg_dict.get("test_split_mode", "from_dir")).strip().lower()
+    if test_split_mode not in {"none", "from_dir", "synthetic"}:
+        msg = (
+            "test_split_mode must be one of 'none', 'from_dir', or 'synthetic', "
+            f"got {test_split_mode!r}"
+        )
+        raise ValueError(msg)
+
+    val_split_mode = str(cfg_dict.get("val_split_mode", "from_test")).strip().lower()
+    if val_split_mode not in {"from_train", "from_test"}:
+        msg = (
+            "val_split_mode must be one of 'from_train' or 'from_test'; "
+            "'same_as_test' is not allowed, "
+            f"got {val_split_mode!r}"
+        )
+        raise ValueError(msg)
+
+    try:
+        val_split_ratio = float(cfg_dict.get("val_split_ratio", 0.5))
+    except (TypeError, ValueError) as err:
+        msg = "val_split_ratio must be a numeric value"
+        raise ValueError(msg) from err
+
+    if not 0.0 < val_split_ratio < 1.0:
+        msg = f"val_split_ratio must be in (0.0, 1.0), got {val_split_ratio}"
+        raise ValueError(msg)
+
     data_root = Path(cfg_dict.get("data_root", "data/mvtec_ad"))
     mlflow_tracking_uri = str(
         cfg_dict.get("mlflow_tracking_uri", "sqlite:///mlflow.db")
@@ -168,6 +198,9 @@ def load_params(
         coreset_sampling_ratio=coreset_ratio,
         image_size=image_size,
         seed=seed,
+        test_split_mode=test_split_mode,
+        val_split_mode=val_split_mode,
+        val_split_ratio=val_split_ratio,
         data_root=data_root,
         mlflow_tracking_uri=mlflow_tracking_uri,
         mlflow_experiment_name=mlflow_experiment_name,
@@ -273,6 +306,7 @@ def train_model(
     # Lazy imports to keep lightweight test runner and CI fast
     import mlflow
     from anomalib.data import MVTecAD
+    from anomalib.data.utils.split import TestSplitMode, ValSplitMode
     from anomalib.engine import Engine
     from anomalib.models import Patchcore
     from lightning.pytorch import seed_everything
@@ -292,6 +326,9 @@ def train_model(
         root=config.data_root,
         category=config.category,
         seed=config.seed,
+        test_split_mode=TestSplitMode(config.test_split_mode),
+        val_split_mode=ValSplitMode(config.val_split_mode),
+        val_split_ratio=config.val_split_ratio,
     )
 
     # 3. Setup PreProcessor and Model

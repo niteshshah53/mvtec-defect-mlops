@@ -44,3 +44,8 @@
   4. MLflow Tracking: Tracks runs under experiment `mvtec_defect_patchcore` with SQLite backend `sqlite:///mlflow.db`. Logs hyperparameters, actual test metrics, the saved model checkpoint artifact, and the metrics file.
   5. Lazy ML Imports: Heavy ML imports (`anomalib`, `torch`, `lightning`, `mlflow`) are deferred to runtime inside `train_model()` so parameter validation, CLI parsing, and unit tests execute instantaneously in lightweight CI environments (`uv sync --locked`) without requiring heavy GPU/PyTorch packages.
 
+## 9. Disjoint Validation and Test Evaluation Protocol
+- **Date**: 2026-10-13
+- **Decision**: Use the explicit protocol `test_split_mode=from_dir`, `val_split_mode=from_test`, and `val_split_ratio=0.5` with seed 42.
+- **Rationale**: Anomalib derives score-normalization statistics and F1 decision thresholds from validation outputs, not from test outputs. The revised protocol makes validation and test image paths disjoint while retaining both image labels for the supported categories.
+- **Limitation**: Validation samples are split from the official test directory, but the resulting validation and test subsets are disjoint. This changes the evaluated test subset and must be disclosed when comparing results with the frozen Week 1 baseline.
