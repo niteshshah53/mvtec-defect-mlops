@@ -223,8 +223,16 @@ __marimo__/
 data/
 mlruns/
 mlflow.db*
+
 artifacts/
+
+# Ignore generated metrics except versioned DVC metric JSON files
 metrics/
+!metrics/
+metrics/*
+!metrics/*.json
+
+
 *.pth
 *.pt
 *.ckpt

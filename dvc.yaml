@@ -1,0 +1,33 @@
+stages:
+  prepare:
+    cmd: >-
+      uv run python -m mvtec_defect.data
+      --root ${data_root}
+      --categories ${category}
+      --output reports/data_summary.json
+    deps:
+      - ${data_root}/${category}
+      - src/mvtec_defect/data.py
+    params:
+      - category
+      - data_root
+    outs:
+      - reports/data_summary.json
+
+  train:
+    cmd: uv run python -m mvtec_defect.train --params params.yaml
+    deps:
+      - reports/data_summary.json
+      - ${data_root}/${category}
+      - src/mvtec_defect/train.py
+    params:
+      - category
+      - backbone
+      - coreset_sampling_ratio
+      - image_size
+      - seed
+      - data_root
+    outs:
+      - artifacts/${category}
+    metrics:
+      - metrics/${category}.json

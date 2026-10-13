@@ -1,0 +1,60 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: uv run python -m mvtec_defect.data --root data/mvtec_ad --categories
+      bottle --output reports/data_summary.json
+    deps:
+    - path: data/mvtec_ad/bottle
+      hash: md5
+      md5: 55bf7b81c5d0436186845464c825673b.dir
+      size: 156570806
+      nfiles: 357
+    - path: src/mvtec_defect/data.py
+      hash: md5
+      md5: cf09161daa951e7b6b64631fb03092d1
+      size: 8625
+    params:
+      params.yaml:
+        category: bottle
+        data_root: data/mvtec_ad
+    outs:
+    - path: reports/data_summary.json
+      hash: md5
+      md5: 0cb7305d7253d56a563bc77afac12eba
+      size: 386
+  train:
+    cmd: uv run python -m mvtec_defect.train --params params.yaml
+    deps:
+    - path: data/mvtec_ad/bottle
+      hash: md5
+      md5: 55bf7b81c5d0436186845464c825673b.dir
+      size: 156570806
+      nfiles: 357
+    - path: reports/data_summary.json
+      hash: md5
+      md5: 0cb7305d7253d56a563bc77afac12eba
+      size: 386
+    - path: src/mvtec_defect/train.py
+      hash: md5
+      md5: 521e4e3902a0ed8401eb4505063e528f
+      size: 11436
+    params:
+      params.yaml:
+        backbone: wide_resnet50_2
+        category: bottle
+        coreset_sampling_ratio: 0.1
+        data_root: data/mvtec_ad
+        image_size:
+        - 256
+        - 256
+        seed: 42
+    outs:
+    - path: artifacts/bottle
+      hash: md5
+      md5: 86a297bc487c5bf8fa8c6d4d4083d16a.dir
+      size: 491479780
+      nfiles: 168
+    - path: metrics/bottle.json
+      hash: md5
+      md5: ef310d1ce2c71af20db67c0621d3287c
+      size: 143
