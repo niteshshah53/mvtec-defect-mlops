@@ -1,0 +1,38 @@
+﻿{
+    "baseline":  "Week 1 PatchCore baseline",
+    "created_at":  "2026-10-13T15:56:30.0228430+05:45",
+    "purpose":  "Reference snapshot of original Week 1 metrics; not a new training run.",
+    "source_directory":  "metrics/",
+    "metric_files":  [
+                         {
+                             "category":  "bottle",
+                             "file":  "metrics/bottle.json",
+                             "mlflow_run_id":  "32bc30fbd7a94e96bd202f21133e0244"
+                         },
+                         {
+                             "category":  "screw",
+                             "file":  "metrics/screw.json",
+                             "mlflow_run_id":  "b5261cf6018741818c715eb6ee54a6ae"
+                         },
+                         {
+                             "category":  "capsule",
+                             "file":  "metrics/capsule.json",
+                             "mlflow_run_id":  "338cee6e967346a0bce7a800d7471195"
+                         }
+                     ],
+    "verified_common_parameters":  {
+                                       "backbone":  "wide_resnet50_2",
+                                       "coreset_sampling_ratio":  "0.1",
+                                       "image_size":  "256x256",
+                                       "seed":  "42",
+                                       "data_root":  "data/mvtec_ad",
+                                       "mlflow_experiment_name":  "mvtec_defect_patchcore",
+                                       "mlflow_tracking_uri":  "sqlite:///mlflow.db"
+                                   },
+    "provenance":  "Metric files were copied from the existing Week 1 metrics/ directory. Historical MLflow runs and parameters were inspected; no model was retrained.",
+    "sha256":  {
+                   "bottle":  "15ACE85AB58D151694C901E5874169713888503663F44A92FA0F9F858238ACEE",
+                   "screw":  "7B7F5FAD763898344D5D857849D454568303EC16194B44679AD3B130E085A035",
+                   "capsule":  "073A4F0EF82F873EED49906DAACF58C75803992D89F1D5DC652AD73E9E597D8A"
+               }
+}

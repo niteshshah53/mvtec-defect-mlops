@@ -36,6 +36,26 @@ class TrainConfig:
         return data
 
 
+def resolve_output_paths(
+    category: str,
+    output_dir: Path | str | None = None,
+    metrics_file: Path | str | None = None,
+) -> tuple[Path, Path]:
+    """Resolve training artifact and metrics output paths.
+
+    When overrides are omitted, preserve the historical category-based paths.
+    """
+    resolved_output_dir = (
+        Path(output_dir) if output_dir is not None else Path("artifacts") / category
+    )
+    resolved_metrics_file = (
+        Path(metrics_file)
+        if metrics_file is not None
+        else Path("metrics") / f"{category}.json"
+    )
+    return resolved_output_dir, resolved_metrics_file
+
+
 def _parse_image_size(raw_size: Any) -> tuple[int, int]:
     """Parse image size from int or pair of ints."""
     if isinstance(raw_size, int):
@@ -187,6 +207,18 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
         default=None,
         help="Root path to MVTec AD dataset directory. Overrides params.yaml.",
     )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=None,
+        help=("Directory for training artifacts. Defaults to artifacts/<category>."),
+    )
+    parser.add_argument(
+        "--metrics-file",
+        type=Path,
+        default=None,
+        help="Path for the metrics JSON file. Defaults to metrics/<category>.json.",
+    )
     return parser.parse_args(args)
 
 
@@ -220,11 +252,17 @@ def extract_metrics(test_results: Any) -> dict[str, float]:
     return metrics
 
 
-def train_model(config: TrainConfig) -> dict[str, float]:
+def train_model(
+    config: TrainConfig,
+    output_dir: Path | str | None = None,
+    metrics_file: Path | str | None = None,
+) -> dict[str, float]:
     """Train and test PatchCore model on the specified category.
 
     Args:
         config: Verified training configuration.
+        output_dir: Optional directory for training artifacts.
+        metrics_file: Optional path for the metrics JSON file.
 
     Returns:
         Dictionary of actual test metrics returned by Engine.test.
@@ -271,7 +309,11 @@ def train_model(config: TrainConfig) -> dict[str, float]:
     )
 
     # 4. Setup Engine
-    output_dir = Path("artifacts") / config.category
+    output_dir, metrics_path = resolve_output_paths(
+        category=config.category,
+        output_dir=output_dir,
+        metrics_file=metrics_file,
+    )
     output_dir.mkdir(parents=True, exist_ok=True)
     engine = Engine(
         default_root_dir=output_dir,
@@ -291,8 +333,7 @@ def train_model(config: TrainConfig) -> dict[str, float]:
     for k, v in sorted(metrics.items()):
         print(f"  {k}: {v}")
 
-    # 8. Save metrics to metrics/<category>.json
-    metrics_path = Path("metrics") / f"{config.category}.json"
+    # 8. Save metrics to the configured output path
     metrics_path.parent.mkdir(parents=True, exist_ok=True)
     with open(metrics_path, "w", encoding="utf-8") as f:
         json.dump(metrics, f, indent=2, sort_keys=True)
@@ -349,7 +390,11 @@ def main(argv: list[str] | None = None) -> int:
         if args.data_root is not None:
             config.data_root = args.data_root
 
-        train_model(config)
+        train_model(
+            config,
+            output_dir=args.output_dir,
+            metrics_file=args.metrics_file,
+        )
     except Exception as err:
         logger.error("Training failed: %s", err, exc_info=True)
         return 1

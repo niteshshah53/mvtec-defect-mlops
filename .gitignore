@@ -241,3 +241,7 @@ metrics/*
 reports/dataset_inspection/
 
 .vscode/
+
+!metrics/experiments/
+metrics/experiments/*
+!metrics/experiments/*.json

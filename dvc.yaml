@@ -1,33 +1,108 @@
 stages:
-  prepare:
+  prepare_bottle:
     cmd: >-
       uv run python -m mvtec_defect.data
       --root ${data_root}
-      --categories ${category}
-      --output reports/data_summary.json
+      --categories bottle
+      --output reports/experiments/data_summary_bottle.json
     deps:
-      - ${data_root}/${category}
+      - ${data_root}/bottle
       - src/mvtec_defect/data.py
     params:
-      - category
       - data_root
     outs:
-      - reports/data_summary.json
+      - reports/experiments/data_summary_bottle.json
 
-  train:
-    cmd: uv run python -m mvtec_defect.train --params params.yaml
+  prepare_screw:
+    cmd: >-
+      uv run python -m mvtec_defect.data
+      --root ${data_root}
+      --categories screw
+      --output reports/experiments/data_summary_screw.json
     deps:
-      - reports/data_summary.json
-      - ${data_root}/${category}
+      - ${data_root}/screw
+      - src/mvtec_defect/data.py
+    params:
+      - data_root
+    outs:
+      - reports/experiments/data_summary_screw.json
+
+  prepare_capsule:
+    cmd: >-
+      uv run python -m mvtec_defect.data
+      --root ${data_root}
+      --categories capsule
+      --output reports/experiments/data_summary_capsule.json
+    deps:
+      - ${data_root}/capsule
+      - src/mvtec_defect/data.py
+    params:
+      - data_root
+    outs:
+      - reports/experiments/data_summary_capsule.json
+
+  train_bottle:
+    cmd: >-
+      uv run python -m mvtec_defect.train
+      --params params.yaml
+      --category bottle
+      --output-dir artifacts/experiments/bottle
+      --metrics-file metrics/experiments/bottle.json
+    deps:
+      - reports/experiments/data_summary_bottle.json
+      - ${data_root}/bottle
       - src/mvtec_defect/train.py
     params:
-      - category
       - backbone
       - coreset_sampling_ratio
       - image_size
       - seed
       - data_root
     outs:
-      - artifacts/${category}
+      - artifacts/experiments/bottle
     metrics:
-      - metrics/${category}.json
+      - metrics/experiments/bottle.json
+
+  train_screw:
+    cmd: >-
+      uv run python -m mvtec_defect.train
+      --params params.yaml
+      --category screw
+      --output-dir artifacts/experiments/screw
+      --metrics-file metrics/experiments/screw.json
+    deps:
+      - reports/experiments/data_summary_screw.json
+      - ${data_root}/screw
+      - src/mvtec_defect/train.py
+    params:
+      - backbone
+      - coreset_sampling_ratio
+      - image_size
+      - seed
+      - data_root
+    outs:
+      - artifacts/experiments/screw
+    metrics:
+      - metrics/experiments/screw.json
+
+  train_capsule:
+    cmd: >-
+      uv run python -m mvtec_defect.train
+      --params params.yaml
+      --category capsule
+      --output-dir artifacts/experiments/capsule
+      --metrics-file metrics/experiments/capsule.json
+    deps:
+      - reports/experiments/data_summary_capsule.json
+      - ${data_root}/capsule
+      - src/mvtec_defect/train.py
+    params:
+      - backbone
+      - coreset_sampling_ratio
+      - image_size
+      - seed
+      - data_root
+    outs:
+      - artifacts/experiments/capsule
+    metrics:
+      - metrics/experiments/capsule.json

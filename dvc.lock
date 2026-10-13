@@ -1,7 +1,7 @@
 schema: '2.0'
 stages:
   prepare:
-    cmd: uv run python -m mvtec_defect.data --root data/mvtec_ad --categories
+    cmd: uv run python -m mvtec_defect.data --root data/mvtec_ad --categories 
       bottle --output reports/data_summary.json
     deps:
     - path: data/mvtec_ad/bottle
@@ -58,3 +58,177 @@ stages:
       hash: md5
       md5: ef310d1ce2c71af20db67c0621d3287c
       size: 143
+  prepare_bottle:
+    cmd: uv run python -m mvtec_defect.data --root data/mvtec_ad --categories 
+      bottle --output reports/experiments/data_summary_bottle.json
+    deps:
+    - path: data/mvtec_ad/bottle
+      hash: md5
+      md5: 55bf7b81c5d0436186845464c825673b.dir
+      size: 156570806
+      nfiles: 357
+    - path: src/mvtec_defect/data.py
+      hash: md5
+      md5: cf09161daa951e7b6b64631fb03092d1
+      size: 8625
+    params:
+      params.yaml:
+        data_root: data/mvtec_ad
+    outs:
+    - path: reports/experiments/data_summary_bottle.json
+      hash: md5
+      md5: 0cb7305d7253d56a563bc77afac12eba
+      size: 386
+  prepare_screw:
+    cmd: uv run python -m mvtec_defect.data --root data/mvtec_ad --categories 
+      screw --output reports/experiments/data_summary_screw.json
+    deps:
+    - path: data/mvtec_ad/screw
+      hash: md5
+      md5: f6564560d68a345b13c6d5e8091af727.dir
+      size: 195961707
+      nfiles: 601
+    - path: src/mvtec_defect/data.py
+      hash: md5
+      md5: cf09161daa951e7b6b64631fb03092d1
+      size: 8625
+    params:
+      params.yaml:
+        data_root: data/mvtec_ad
+    outs:
+    - path: reports/experiments/data_summary_screw.json
+      hash: md5
+      md5: 361facef34da946258fc1b3dbdf10465
+      size: 498
+  prepare_capsule:
+    cmd: uv run python -m mvtec_defect.data --root data/mvtec_ad --categories 
+      capsule --output reports/experiments/data_summary_capsule.json
+    deps:
+    - path: data/mvtec_ad/capsule
+      hash: md5
+      md5: 9251122dc93e89f5be38ba1b6ed0908e.dir
+      size: 404753963
+      nfiles: 462
+    - path: src/mvtec_defect/data.py
+      hash: md5
+      md5: cf09161daa951e7b6b64631fb03092d1
+      size: 8625
+    params:
+      params.yaml:
+        data_root: data/mvtec_ad
+    outs:
+    - path: reports/experiments/data_summary_capsule.json
+      hash: md5
+      md5: 30192db9ddfb4272919f18348eb81032
+      size: 450
+  train_bottle:
+    cmd: uv run python -m mvtec_defect.train --params params.yaml --category 
+      bottle --output-dir artifacts/experiments/bottle --metrics-file 
+      metrics/experiments/bottle.json
+    deps:
+    - path: data/mvtec_ad/bottle
+      hash: md5
+      md5: 55bf7b81c5d0436186845464c825673b.dir
+      size: 156570806
+      nfiles: 357
+    - path: reports/experiments/data_summary_bottle.json
+      hash: md5
+      md5: 0cb7305d7253d56a563bc77afac12eba
+      size: 386
+    - path: src/mvtec_defect/train.py
+      hash: md5
+      md5: 5c60d1ef3e15b9b8af498606489748f1
+      size: 12798
+    params:
+      params.yaml:
+        backbone: wide_resnet50_2
+        coreset_sampling_ratio: 0.1
+        data_root: data/mvtec_ad
+        image_size:
+        - 256
+        - 256
+        seed: 42
+    outs:
+    - path: artifacts/experiments/bottle
+      hash: md5
+      md5: a4711750b156efe2198cdbba78814dfe.dir
+      size: 491479908
+      nfiles: 168
+    - path: metrics/experiments/bottle.json
+      hash: md5
+      md5: ef310d1ce2c71af20db67c0621d3287c
+      size: 143
+  train_screw:
+    cmd: uv run python -m mvtec_defect.train --params params.yaml --category 
+      screw --output-dir artifacts/experiments/screw --metrics-file 
+      metrics/experiments/screw.json
+    deps:
+    - path: data/mvtec_ad/screw
+      hash: md5
+      md5: f6564560d68a345b13c6d5e8091af727.dir
+      size: 195961707
+      nfiles: 601
+    - path: reports/experiments/data_summary_screw.json
+      hash: md5
+      md5: 361facef34da946258fc1b3dbdf10465
+      size: 498
+    - path: src/mvtec_defect/train.py
+      hash: md5
+      md5: 5c60d1ef3e15b9b8af498606489748f1
+      size: 12798
+    params:
+      params.yaml:
+        backbone: wide_resnet50_2
+        coreset_sampling_ratio: 0.1
+        data_root: data/mvtec_ad
+        image_size:
+        - 256
+        - 256
+        seed: 42
+    outs:
+    - path: artifacts/experiments/screw
+      hash: md5
+      md5: 92c6029b339d2700c771a6a01458c85c.dir
+      size: 643963888
+      nfiles: 322
+    - path: metrics/experiments/screw.json
+      hash: md5
+      md5: fab457c9680b812db5835c2edc62f87a
+      size: 159
+  train_capsule:
+    cmd: uv run python -m mvtec_defect.train --params params.yaml --category 
+      capsule --output-dir artifacts/experiments/capsule --metrics-file 
+      metrics/experiments/capsule.json
+    deps:
+    - path: data/mvtec_ad/capsule
+      hash: md5
+      md5: 9251122dc93e89f5be38ba1b6ed0908e.dir
+      size: 404753963
+      nfiles: 462
+    - path: reports/experiments/data_summary_capsule.json
+      hash: md5
+      md5: 30192db9ddfb4272919f18348eb81032
+      size: 450
+    - path: src/mvtec_defect/train.py
+      hash: md5
+      md5: 5c60d1ef3e15b9b8af498606489748f1
+      size: 12798
+    params:
+      params.yaml:
+        backbone: wide_resnet50_2
+        coreset_sampling_ratio: 0.1
+        data_root: data/mvtec_ad
+        image_size:
+        - 256
+        - 256
+        seed: 42
+    outs:
+    - path: artifacts/experiments/capsule
+      hash: md5
+      md5: efd61e951093017428af4509cc74e72d.dir
+      size: 524583870
+      nfiles: 266
+    - path: metrics/experiments/capsule.json
+      hash: md5
+      md5: 9fdc180d23694e44b6fd6c513c661a82
+      size: 159

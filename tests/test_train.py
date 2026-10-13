@@ -13,6 +13,7 @@ from mvtec_defect.train import (
     extract_metrics,
     load_params,
     parse_args,
+    resolve_output_paths,
 )
 
 
@@ -239,6 +240,8 @@ def test_parse_args_defaults() -> None:
     assert args.category is None
     assert args.params == Path("params.yaml")
     assert args.data_root is None
+    assert args.output_dir is None
+    assert args.metrics_file is None
 
 
 def test_parse_args_explicit() -> None:
@@ -251,11 +254,37 @@ def test_parse_args_explicit() -> None:
             "custom_params.yaml",
             "--data-root",
             "custom/data",
+            "--output-dir",
+            "custom/artifacts",
+            "--metrics-file",
+            "custom/metrics.json",
         ]
     )
     assert args.category == "screw"
     assert args.params == Path("custom_params.yaml")
     assert args.data_root == Path("custom/data")
+    assert args.output_dir == Path("custom/artifacts")
+    assert args.metrics_file == Path("custom/metrics.json")
+
+
+def test_resolve_output_paths_defaults() -> None:
+    """Verify historical output paths remain the defaults."""
+    output_dir, metrics_file = resolve_output_paths("bottle")
+
+    assert output_dir == Path("artifacts/bottle")
+    assert metrics_file == Path("metrics/bottle.json")
+
+
+def test_resolve_output_paths_explicit() -> None:
+    """Verify explicit output paths are used without category suffixes."""
+    output_dir, metrics_file = resolve_output_paths(
+        "bottle",
+        output_dir="runs/week2/bottle",
+        metrics_file="runs/week2/metrics.json",
+    )
+
+    assert output_dir == Path("runs/week2/bottle")
+    assert metrics_file == Path("runs/week2/metrics.json")
 
 
 def test_extract_metrics() -> None:
