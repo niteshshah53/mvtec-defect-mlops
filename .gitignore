@@ -231,3 +231,5 @@ metrics/
 *.onnx
 
 reports/dataset_inspection/
+
+.vscode/

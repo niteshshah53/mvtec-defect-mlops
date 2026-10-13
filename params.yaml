@@ -1,0 +1,10 @@
+category: bottle
+backbone: wide_resnet50_2
+coreset_sampling_ratio: 0.1
+image_size:
+  - 256
+  - 256
+seed: 42
+data_root: data/mvtec_ad
+mlflow_tracking_uri: sqlite:///mlflow.db
+mlflow_experiment_name: mvtec_defect_patchcore

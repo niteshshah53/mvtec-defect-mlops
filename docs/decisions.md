@@ -33,3 +33,14 @@
 ## 7. Contact-Sheet Visual Inspection
 - **Date**: 2026-10-04
 - **Observation**: The inspected contact sheets showed substantial variation in defect size, location, and shape, including large regions, thin line-like defects, and multi-component masks. Several defects were subtle in raw images, especially some screw and capsule examples. Good samples also varied in screw orientation, capsule imprint/logo visibility, and bottle appearance/reflections.
+
+## 8. Anomalib PatchCore Training and MLflow Tracking Pipeline
+- **Date**: 2026-10-13
+- **Decision**: Implement `src/mvtec_defect/train.py` using Anomalib 2.7.0 (`MVTecAD`, `Patchcore`, `Engine`), Lightning seeding (`seed_everything`), and MLflow (`sqlite:///mlflow.db`) experiment tracking.
+- **Key Details**:
+  1. Configuration: Loaded and validated from `params.yaml` with explicit settings for category, backbone, coreset sampling ratio, image size, and seed. The CLI `--category` argument allows overriding the active category while preserving other defaults.
+  2. Pre-processing: Uses `Patchcore.configure_pre_processor(image_size=config.image_size)` to construct standard resize and normalization transformations.
+  3. Dynamic Metric Extraction: Metric dictionaries returned by `Engine.test()` are dynamically extracted and serialized without hardcoded metric names or values, saved to `metrics/<category>.json`.
+  4. MLflow Tracking: Tracks runs under experiment `mvtec_defect_patchcore` with SQLite backend `sqlite:///mlflow.db`. Logs hyperparameters, actual test metrics, the saved model checkpoint artifact, and the metrics file.
+  5. Lazy ML Imports: Heavy ML imports (`anomalib`, `torch`, `lightning`, `mlflow`) are deferred to runtime inside `train_model()` so parameter validation, CLI parsing, and unit tests execute instantaneously in lightweight CI environments (`uv sync --locked`) without requiring heavy GPU/PyTorch packages.
+
