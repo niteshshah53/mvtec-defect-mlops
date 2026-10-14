@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import time
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -302,6 +303,12 @@ def train_model(
 
     Raises:
         FileNotFoundError: If the category dataset folder does not exist.
+        Exception: If model setup, training, evaluation, artifact logging,
+            or MLflow logging fails. When training or evaluation fails, any
+            secondary failure during duration logging is logged as a warning
+            and the original exception is preserved. If duration logging fails
+            when there is no earlier exception, the error propagates so MLflow
+            marks the run as failed and the CLI exits with code 1.
     """
     # Lazy imports to keep lightweight test runner and CI fast
     import mlflow
@@ -316,93 +323,122 @@ def train_model(
         msg = f"Category directory does not exist: {category_dir}"
         raise FileNotFoundError(msg)
 
-    # 1. Seed experiment
-    logger.info("Setting global seed to %d", config.seed)
-    seed_everything(config.seed, workers=True)
-
-    # 2. Setup DataModule
-    logger.info("Initializing MVTecAD dataset for category: %s", config.category)
-    datamodule = MVTecAD(
-        root=config.data_root,
-        category=config.category,
-        seed=config.seed,
-        test_split_mode=TestSplitMode(config.test_split_mode),
-        val_split_mode=ValSplitMode(config.val_split_mode),
-        val_split_ratio=config.val_split_ratio,
-    )
-
-    # 3. Setup PreProcessor and Model
-    logger.info(
-        "Configuring PatchCore with backbone=%s, ratio=%.3f, image_size=%s",
-        config.backbone,
-        config.coreset_sampling_ratio,
-        config.image_size,
-    )
-    pre_processor = Patchcore.configure_pre_processor(image_size=config.image_size)
-    model = Patchcore(
-        backbone=config.backbone,
-        coreset_sampling_ratio=config.coreset_sampling_ratio,
-        pre_processor=pre_processor,
-    )
-
-    # 4. Setup Engine
-    output_dir, metrics_path = resolve_output_paths(
+    resolved_output_dir, resolved_metrics_path = resolve_output_paths(
         category=config.category,
         output_dir=output_dir,
         metrics_file=metrics_file,
     )
-    output_dir.mkdir(parents=True, exist_ok=True)
-    engine = Engine(
-        default_root_dir=output_dir,
-    )
+    resolved_output_dir.mkdir(parents=True, exist_ok=True)
 
-    # 5. Train model
-    logger.info("Starting PatchCore training...")
-    engine.train(model=model, datamodule=datamodule)
-
-    # 6. Test model
-    logger.info("Running evaluation on test set...")
-    test_results = engine.test(model=model, datamodule=datamodule)
-
-    # 7. Extract actual metrics returned by Engine
-    metrics = extract_metrics(test_results)
-    print("\n--- Actual Test Metrics ---")
-    for k, v in sorted(metrics.items()):
-        print(f"  {k}: {v}")
-
-    # 8. Save metrics to the configured output path
-    metrics_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(metrics_path, "w", encoding="utf-8") as f:
-        json.dump(metrics, f, indent=2, sort_keys=True)
-    print(f"\nMetrics written to: {metrics_path}")
-
-    # 9. Log parameters, actual metrics, and model artifact to MLflow
-    logger.info("Logging run to MLflow at %s", config.mlflow_tracking_uri)
+    logger.info("Configuring MLflow tracking at %s", config.mlflow_tracking_uri)
     mlflow.set_tracking_uri(config.mlflow_tracking_uri)
     mlflow.set_experiment(config.mlflow_experiment_name)
 
-    with mlflow.start_run(run_name=f"{config.category}_patchcore") as run:
-        mlflow.log_params(config.to_dict())
-        if metrics:
-            mlflow.log_metrics(metrics)
+    run_name = f"{config.category}_{config.backbone}_{config.coreset_sampling_ratio}"
 
-        checkpoint_path = engine.best_model_path
-        if not checkpoint_path or not Path(checkpoint_path).exists():
-            # Check standard fallback path
-            fallback_ckpt = output_dir / "weights" / "lightning" / "model.ckpt"
-            if fallback_ckpt.exists():
-                checkpoint_path = str(fallback_ckpt)
+    start_time = time.perf_counter()
+    with mlflow.start_run(run_name=run_name) as run:
+        try:
+            # 1. Log complete TrainConfig parameters before training
+            mlflow.log_params(config.to_dict())
 
-        if checkpoint_path and Path(checkpoint_path).exists():
-            print(f"Logging model checkpoint artifact to MLflow: {checkpoint_path}")
-            mlflow.log_artifact(str(checkpoint_path), artifact_path="model")
+            # 2. Seed experiment
+            logger.info("Setting global seed to %d", config.seed)
+            seed_everything(config.seed, workers=True)
+
+            # 3. Setup DataModule
+            logger.info(
+                "Initializing MVTecAD dataset for category: %s", config.category
+            )
+            datamodule = MVTecAD(
+                root=config.data_root,
+                category=config.category,
+                seed=config.seed,
+                test_split_mode=TestSplitMode(config.test_split_mode),
+                val_split_mode=ValSplitMode(config.val_split_mode),
+                val_split_ratio=config.val_split_ratio,
+            )
+
+            # 4. Setup PreProcessor and Model
+            logger.info(
+                "Configuring PatchCore with backbone=%s, ratio=%.3f, image_size=%s",
+                config.backbone,
+                config.coreset_sampling_ratio,
+                config.image_size,
+            )
+            pre_processor = Patchcore.configure_pre_processor(
+                image_size=config.image_size
+            )
+            model = Patchcore(
+                backbone=config.backbone,
+                coreset_sampling_ratio=config.coreset_sampling_ratio,
+                pre_processor=pre_processor,
+            )
+
+            # 5. Setup Engine
+            engine = Engine(
+                default_root_dir=resolved_output_dir,
+            )
+
+            # 6. Train model
+            logger.info("Starting PatchCore training...")
+            engine.train(model=model, datamodule=datamodule)
+
+            # 7. Test model
+            logger.info("Running evaluation on test set...")
+            test_results = engine.test(model=model, datamodule=datamodule)
+
+            # 8. Extract actual metrics returned by Engine
+            metrics = extract_metrics(test_results)
+            print("\n--- Actual Test Metrics ---")
+            for k, v in sorted(metrics.items()):
+                print(f"  {k}: {v}")
+
+            # 9. Save metrics to the configured output path
+            resolved_metrics_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(resolved_metrics_path, "w", encoding="utf-8") as f:
+                json.dump(metrics, f, indent=2, sort_keys=True)
+            print(f"\nMetrics written to: {resolved_metrics_path}")
+
+            # 10. Log actual metrics and artifacts to MLflow
+            if metrics:
+                mlflow.log_metrics(metrics)
+
+            checkpoint_path = engine.best_model_path
+            if not checkpoint_path or not Path(checkpoint_path).exists():
+                fallback_ckpt = (
+                    resolved_output_dir / "weights" / "lightning" / "model.ckpt"
+                )
+                if fallback_ckpt.exists():
+                    checkpoint_path = str(fallback_ckpt)
+
+            if checkpoint_path and Path(checkpoint_path).exists():
+                print(f"Logging model checkpoint artifact to MLflow: {checkpoint_path}")
+                mlflow.log_artifact(str(checkpoint_path), artifact_path="model")
+            else:
+                print("Warning: No model checkpoint found to log to MLflow.")
+
+            if resolved_metrics_path.exists():
+                mlflow.log_artifact(str(resolved_metrics_path), artifact_path="metrics")
+
+            print(f"MLflow Run ID: {run.info.run_id}")
+        except BaseException:
+            # Record elapsed duration on failure without masking the original exception.
+            try:
+                elapsed_seconds = time.perf_counter() - start_time
+                mlflow.log_metric("duration_seconds", elapsed_seconds)
+            except Exception as log_err:
+                logger.warning(
+                    "Failed to log duration_seconds metric after error: %s",
+                    log_err,
+                )
+            raise
         else:
-            print("Warning: No model checkpoint found to log to MLflow.")
-
-        if metrics_path.exists():
-            mlflow.log_artifact(str(metrics_path), artifact_path="metrics")
-
-        print(f"MLflow Run ID: {run.info.run_id}")
+            # Record elapsed duration on success. If duration logging fails when no
+            # earlier exception occurred, the error propagates so MLflow marks the
+            # run as failed and the CLI returns exit code 1.
+            elapsed_seconds = time.perf_counter() - start_time
+            mlflow.log_metric("duration_seconds", elapsed_seconds)
 
     return metrics
 
